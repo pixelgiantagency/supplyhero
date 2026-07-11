@@ -1,7 +1,7 @@
 // components/category-hover.js
 
 export function initCategoryHover() {
-  let mm = gsap.matchMedia();
+  const mm = gsap.matchMedia();
 
   mm.add("(min-width: 992px)", () => {
 

@@ -4,14 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --minify --outfile=dist/bundle.js",
-    "watch": "esbuild src/main.js --bundle --outfile=dist/bundle.js --watch"
-  },
+  "build": "esbuild src/main.js --bundle --minify --outfile=dist/bundle.js",
+  "watch": "esbuild src/main.js --bundle --outfile=dist/bundle.js --watch",
+  "lint": "eslint src/**/*.js",
+  "format": "prettier --write src/**/*.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5"
   }
 }

@@ -2,7 +2,7 @@
 
 export function initMarkenversprechen() {
   // GSAP MatchMedia für Breakpoint-spezifische Animationen
-  let mm = gsap.matchMedia();
+  const mm = gsap.matchMedia();
 
   // --------------------------------------------------------
   // 1. DESKTOP (Ab 992px) - 4 Spalten, dynamischer & schneller
@@ -32,7 +32,7 @@ export function initMarkenversprechen() {
       if (image) gsap.set(image, { clipPath: "inset(0% 0% 100% 0%)" });
 
       // Kürzerer Stagger: Nur 0.15s Verzögerung pro Spalte statt 0.2s
-      let stepStartTime = index * 0.15;
+      const stepStartTime = index * 0.15;
 
       // Die komprimierte, überlappende Timeline für Desktop
       if (lines.length) tl.to(lines, { scaleY: 1, duration: 0.8, ease: "power3.inOut" }, stepStartTime);
@@ -69,7 +69,7 @@ export function initMarkenversprechen() {
         }
       });
 
-      let stepStartTime = (index % 2) * 0.2;
+      const stepStartTime = (index % 2) * 0.2;
 
       if (lines.length) tl.to(lines, { scaleY: 1, duration: 1.0, ease: "power3.inOut" }, stepStartTime);
       if (number) tl.to(number, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, stepStartTime + 0.2);

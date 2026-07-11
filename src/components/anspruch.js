@@ -11,7 +11,7 @@ export function initAnspruch() {
 
   if (!circleWrapper || circleItems.length === 0) return;
 
-  let mm = gsap.matchMedia();
+  const mm = gsap.matchMedia();
 
   // --------------------------------------------------------
   // 1. DESKTOP & TABLET (Alle auf einmal mit Stagger)
@@ -34,7 +34,7 @@ export function initAnspruch() {
       if (textBottom) gsap.set(textBottom, { y: "1.5em", opacity: 0 });
       if (line) gsap.set(line, { strokeDasharray: 308, strokeDashoffset: 308 });
 
-      let itemStartTime = index * 0.3;
+      const itemStartTime = index * 0.3;
 
       if (line) tl.to(line, { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" }, itemStartTime);
       if (textTop) tl.to(textTop, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, itemStartTime + 0.6);

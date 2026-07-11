@@ -169,6 +169,6 @@ export function initProjectSlider() {
     startAutoplay();
   }
 
-  let wrappers = document.querySelectorAll('[data-slideshow="wrap"]');
+  const wrappers = document.querySelectorAll('[data-slideshow="wrap"]');
   wrappers.forEach(wrap => initSlideShow(wrap));
 }
