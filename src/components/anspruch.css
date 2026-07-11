@@ -1,0 +1,31 @@
+/* ==========================================
+   Unser Anspruch: Mobile Swipe Slider (Full Bleed)
+   ========================================== */
+@media screen and (max-width: 767px) {
+  [data-circle="wrapper"] {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+
+    /* 1. Container verbreitern, um das Section-Padding auszugleichen */
+    /* Du hast 'padding-global: 1.25rem' auf Mobile */
+    width: calc(100% + 2.5rem) !important;
+    margin-left: -1.25rem !important;
+
+    /* 2. Padding INSIDE den Container legen, damit der Startpunkt stimmt */
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  [data-circle="wrapper"]::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  [data-circle="item"] {
+    flex: 0 0 100% !important;
+    scroll-snap-align: center !important;
+  }
+}
