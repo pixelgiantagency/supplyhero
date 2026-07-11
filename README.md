@@ -1,10 +1,9 @@
 # Supplyhero – Webflow Custom Code
 
-Custom GSAP-Animationen und Interaktionen für die Supplyhero-Webflow-Seite. Der Code wird lokal in VSCode entwickelt, über GitHub versioniert und per [jsDelivr](https://www.jsdelivr.com/) direkt aus dem Repository in Webflow eingebunden – ganz ohne Drittanbieter-Hosting (z.B. Odyn.dev).
+Custom GSAP-Animationen und Interaktionen für die Supplyhero-Webflow-Seite. Der Code wird lokal in VSCode entwickelt, über GitHub versioniert und per [jsDelivr](https://www.jsdelivr.com/) direkt aus dem Repository in Webflow eingebunden.
 
 - **Repo:** https://github.com/pixelgiantagency/supplyhero
 - **Staging:** https://supplyherostaging.webflow.io
-- **Live:** _(noch nicht verknüpft)_
 
 ---
 
@@ -140,8 +139,3 @@ Danach in Webflow den Head-Code (`PROD_SCRIPT`) auf die neue Versionsnummer anpa
 
 **Rollback:** Bei Problemen einfach `PROD_SCRIPT` auf die vorherige Versionsnummer zurücksetzen und republishen.
 
----
-
-## Verlauf / Kontext
-
-Dieses Setup ersetzt eine vorherige Einbindung über Odyn.dev. Migration erfolgte schrittweise: Umbau des monolithischen GSAP-Scripts in einzelne Component-Module → Umzug zu VSCode/esbuild/GitHub/jsDelivr → Einrichtung von ESLint/Prettier → Automatisierung via GitHub Actions.
