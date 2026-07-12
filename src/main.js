@@ -9,7 +9,7 @@ import {
   initHeroSequence,
   initLineAnimations,
   initTwostepScalingNavigation,
-  initScrollRefreshFixes
+  initScrollRefreshFixes,
 } from './global.js';
 
 import { initImageSequenceScroll } from './components/image-sequence';
@@ -36,8 +36,6 @@ function init() {
   initAnspruch();
   initProjectSlider();
   initScrollRefreshFixes();
-
-  console.log("BOOM! Mein Code kommt direkt aus VS Code in Webflow!");
 }
 
 // Robust gegen spät ladende/async eingefügte Scripts: Falls DOMContentLoaded
