@@ -18,6 +18,7 @@ import { initCategoryHover } from './components/category-hover';
 import { initMarkenversprechen } from './components/markenversprechen';
 import { initAnspruch } from './components/anspruch';
 import { initProjectSlider } from './components/project-slider';
+import { initDraggableMarquee } from './components/draggable-marquee';
 
 function init() {
   initGsapCore();
@@ -35,6 +36,7 @@ function init() {
   initMarkenversprechen();
   initAnspruch();
   initProjectSlider();
+  initDraggableMarquee();
   initScrollRefreshFixes();
 }
 
