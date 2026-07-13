@@ -13,102 +13,124 @@ export function initDraggableMarquee() {
     const list = wrapper.querySelector('[data-draggable-marquee-list]');
     if (!collection || !list) return;
 
-    const duration = getNumberAttr(wrapper, 'data-duration', 20);
-    const multiplier = getNumberAttr(wrapper, 'data-multiplier', 40);
-    const sensitivity = getNumberAttr(wrapper, 'data-sensitivity', 0.01);
-
-    const wrapperWidth = wrapper.getBoundingClientRect().width;
-    const listWidth = list.scrollWidth || list.getBoundingClientRect().width;
-    if (!wrapperWidth || !listWidth) return;
-
-    // Make enough duplicates to cover screen
-    const minRequiredWidth = wrapperWidth + listWidth + 2;
-    while (collection.scrollWidth < minRequiredWidth) {
-      const listClone = list.cloneNode(true);
-      listClone.setAttribute('data-draggable-marquee-clone', '');
-      listClone.setAttribute('aria-hidden', 'true');
-      collection.appendChild(listClone);
+    // NEU: Erst starten, wenn alle Bilder in der Liste geladen sind (oder fehlgeschlagen -
+    // dann trotzdem weitermachen, statt für immer zu warten). Verhindert, dass listWidth
+    // bei 0 berechnet wird, weil Bilder (v.a. aus einer CMS-Liste) noch nicht fertig
+    // geladen sind, wenn das Skript synchron beim Seitenaufbau läuft.
+    const images = Array.from(list.querySelectorAll('img'));
+    if (images.length === 0) {
+      setupMarquee();
+    } else {
+      let loadedCount = 0;
+      const onImageSettled = () => {
+        loadedCount += 1;
+        if (loadedCount === images.length) setupMarquee();
+      };
+      images.forEach((img) => {
+        if (img.complete) {
+          onImageSettled();
+        } else {
+          img.addEventListener('load', onImageSettled, { once: true });
+          img.addEventListener('error', onImageSettled, { once: true });
+        }
+      });
     }
 
-    const wrapX = gsap.utils.wrap(-listWidth, 0);
+    function setupMarquee() {
+      const duration = getNumberAttr(wrapper, 'data-duration', 20);
+      const multiplier = getNumberAttr(wrapper, 'data-multiplier', 40);
+      const sensitivity = getNumberAttr(wrapper, 'data-sensitivity', 0.01);
 
-    gsap.set(collection, { x: 0 });
+      const wrapperWidth = wrapper.getBoundingClientRect().width;
+      const listWidth = list.scrollWidth || list.getBoundingClientRect().width;
+      if (!wrapperWidth || !listWidth) return;
 
-    const marqueeLoop = gsap.to(collection, {
-      x: -listWidth,
-      duration,
-      ease: 'none',
-      repeat: -1,
-      onReverseComplete: () => marqueeLoop.progress(1),
-      modifiers: {
-        x: (x) => wrapX(parseFloat(x)) + 'px',
-      },
-    });
+      // Make enough duplicates to cover screen
+      const minRequiredWidth = wrapperWidth + listWidth + 2;
+      while (collection.scrollWidth < minRequiredWidth) {
+        const listClone = list.cloneNode(true);
+        listClone.setAttribute('data-draggable-marquee-clone', '');
+        listClone.setAttribute('aria-hidden', 'true');
+        collection.appendChild(listClone);
+      }
 
-    // Direction can be used for css + set initial direction on load
-    const initialDirectionAttr = (wrapper.getAttribute('data-direction') || 'left').toLowerCase();
-    const baseDirection = initialDirectionAttr === 'right' ? -1 : 1;
+      const wrapX = gsap.utils.wrap(-listWidth, 0);
 
-    const timeScale = { value: 1 };
+      gsap.set(collection, { x: 0 });
 
-    timeScale.value = baseDirection;
-    wrapper.setAttribute('data-direction', baseDirection < 0 ? 'right' : 'left');
+      const marqueeLoop = gsap.to(collection, {
+        x: -listWidth,
+        duration,
+        ease: 'none',
+        repeat: -1,
+        onReverseComplete: () => marqueeLoop.progress(1),
+        modifiers: {
+          x: (x) => wrapX(parseFloat(x)) + 'px',
+        },
+      });
 
-    if (baseDirection < 0) marqueeLoop.progress(1);
+      const initialDirectionAttr = (wrapper.getAttribute('data-direction') || 'left').toLowerCase();
+      const baseDirection = initialDirectionAttr === 'right' ? -1 : 1;
 
-    function applyTimeScale() {
-      marqueeLoop.timeScale(timeScale.value);
-      wrapper.setAttribute('data-direction', timeScale.value < 0 ? 'right' : 'left');
+      const timeScale = { value: 1 };
+
+      timeScale.value = baseDirection;
+      wrapper.setAttribute('data-direction', baseDirection < 0 ? 'right' : 'left');
+
+      if (baseDirection < 0) marqueeLoop.progress(1);
+
+      function applyTimeScale() {
+        marqueeLoop.timeScale(timeScale.value);
+        wrapper.setAttribute('data-direction', timeScale.value < 0 ? 'right' : 'left');
+      }
+
+      applyTimeScale();
+
+      const marqueeObserver = Observer.create({
+        target: wrapper,
+        type: 'pointer,touch',
+        preventDefault: true,
+        debounce: false,
+        onChangeX: (observerEvent) => {
+          let velocityTimeScale = observerEvent.velocityX * -sensitivity;
+          velocityTimeScale = gsap.utils.clamp(-multiplier, multiplier, velocityTimeScale);
+
+          gsap.killTweensOf(timeScale);
+
+          const restingDirection = velocityTimeScale < 0 ? -1 : 1;
+
+          gsap
+            .timeline({ onUpdate: applyTimeScale })
+            .to(timeScale, { value: velocityTimeScale, duration: 0.1, overwrite: true })
+            .to(timeScale, { value: restingDirection, duration: 1.0 });
+        },
+      });
+
+      ScrollTrigger.create({
+        trigger: wrapper,
+        start: 'top bottom',
+        end: 'bottom top',
+        onEnter: () => {
+          marqueeLoop.resume();
+          applyTimeScale();
+          marqueeObserver.enable();
+        },
+        onEnterBack: () => {
+          marqueeLoop.resume();
+          applyTimeScale();
+          marqueeObserver.enable();
+        },
+        onLeave: () => {
+          marqueeLoop.pause();
+          marqueeObserver.disable();
+        },
+        onLeaveBack: () => {
+          marqueeLoop.pause();
+          marqueeObserver.disable();
+        },
+      });
+
+      wrapper.setAttribute('data-draggable-marquee-init', 'initialized');
     }
-
-    applyTimeScale();
-
-    // Drag observer
-    const marqueeObserver = Observer.create({
-      target: wrapper,
-      type: 'pointer,touch',
-      preventDefault: true,
-      debounce: false,
-      onChangeX: (observerEvent) => {
-        let velocityTimeScale = observerEvent.velocityX * -sensitivity;
-        velocityTimeScale = gsap.utils.clamp(-multiplier, multiplier, velocityTimeScale);
-
-        gsap.killTweensOf(timeScale);
-
-        const restingDirection = velocityTimeScale < 0 ? -1 : 1;
-
-        gsap
-          .timeline({ onUpdate: applyTimeScale })
-          .to(timeScale, { value: velocityTimeScale, duration: 0.1, overwrite: true })
-          .to(timeScale, { value: restingDirection, duration: 1.0 });
-      },
-    });
-
-    // Pause marquee when scrolled out of view
-    ScrollTrigger.create({
-      trigger: wrapper,
-      start: 'top bottom',
-      end: 'bottom top',
-      onEnter: () => {
-        marqueeLoop.resume();
-        applyTimeScale();
-        marqueeObserver.enable();
-      },
-      onEnterBack: () => {
-        marqueeLoop.resume();
-        applyTimeScale();
-        marqueeObserver.enable();
-      },
-      onLeave: () => {
-        marqueeLoop.pause();
-        marqueeObserver.disable();
-      },
-      onLeaveBack: () => {
-        marqueeLoop.pause();
-        marqueeObserver.disable();
-      },
-    });
-
-    wrapper.setAttribute('data-draggable-marquee-init', 'initialized');
   });
 }
