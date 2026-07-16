@@ -14,6 +14,7 @@ export function initGsapCore() {
 }
 
 export function revealAfterSetup() {
+  console.log('🟢 revealAfterSetup() läuft, Zeit seit Seitenstart:', performance.now());
   document.body.classList.add('js-ready');
 }
 
@@ -180,6 +181,7 @@ export function initContentRevealScroll() {
 }
 
 export function initHeroSequence() {
+  console.log('🔵 initHeroSequence() startet');
   const navbar = document.querySelector('[data-gsap="navbar"]');
   const heading = document.querySelector('[data-hero="heading"]');
   const text = document.querySelector('[data-hero="text"]');
@@ -208,6 +210,8 @@ export function initHeroSequence() {
   if (button) {
     tl.from(button, { y: '2em', opacity: 0, duration: 0.8, ease: 'power4.out' }, '-=0.6');
   }
+
+  console.log('🔵 initHeroSequence() fertig, Timeline-Dauer:', tl.duration());
 }
 
 export function initLineAnimations() {
