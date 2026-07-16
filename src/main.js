@@ -2,6 +2,7 @@
 
 import {
   initGsapCore,
+  revealAfterSetup,
   initFooterParallax,
   initMaskTextScrollReveal,
   initImageReveals,
@@ -13,7 +14,7 @@ import {
 } from './global.js';
 
 import { initImageSequenceScroll } from './components/image-sequence';
-import { initProcessSequence } from './components/process-sequence';
+import { initStepReveal } from './components/step-reveal';
 import { initCategoryHover } from './components/category-hover';
 import { initMarkenversprechen } from './components/markenversprechen';
 import { initAnspruch } from './components/anspruch';
@@ -31,13 +32,15 @@ function init() {
   initHeroSequence();
   initLineAnimations();
   initTwostepScalingNavigation();
-  initProcessSequence();
+  initStepReveal();
   initCategoryHover();
   initMarkenversprechen();
   initAnspruch();
   initProjectSlider();
   initDraggableMarquee();
   initScrollRefreshFixes();
+
+  revealAfterSetup();
 }
 
 // Robust gegen spät ladende/async eingefügte Scripts: Falls DOMContentLoaded

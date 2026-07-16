@@ -13,6 +13,10 @@ export function initGsapCore() {
   });
 }
 
+export function revealAfterSetup() {
+  document.body.classList.add('js-ready');
+}
+
 export function initFooterParallax() {
   const mm = gsap.matchMedia();
 
