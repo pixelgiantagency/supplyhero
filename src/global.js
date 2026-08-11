@@ -187,7 +187,9 @@ export function initHeroSequence() {
 
   const tl = gsap.timeline({ delay: 0.1 });
 
-  if (navbar) {
+  const isFirstVisit = !sessionStorage.getItem('navIntroPlayed');
+
+  if (navbar && isFirstVisit) {
     tl.from(navbar, { yPercent: -150, opacity: 0, duration: 1.2, ease: 'expo.out' });
   }
 
@@ -197,7 +199,7 @@ export function initHeroSequence() {
     tl.to(
       splitHero.lines,
       { yPercent: 0, duration: 1.1, stagger: 0.11, ease: 'expo.out' },
-      '-=0.6'
+      isFirstVisit ? '-=0.6' : 0
     );
   }
 
@@ -207,6 +209,10 @@ export function initHeroSequence() {
 
   if (button) {
     tl.from(button, { y: '2em', opacity: 0, duration: 0.8, ease: 'power4.out' }, '-=0.6');
+  }
+
+  if (isFirstVisit) {
+    sessionStorage.setItem('navIntroPlayed', 'true');
   }
 }
 
