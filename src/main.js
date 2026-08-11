@@ -20,10 +20,12 @@ import { initMarkenversprechen } from './components/markenversprechen';
 import { initAnspruch } from './components/anspruch';
 import { initProjectSlider } from './components/project-slider';
 import { initDraggableMarquee } from './components/draggable-marquee';
+import { initVideoBackground } from './components/video-background';
 
 function init() {
   initGsapCore();
 
+  initVideoBackground();
   initFooterParallax();
   initMaskTextScrollReveal();
   initImageReveals();
