@@ -63,7 +63,9 @@ export function initDraggableMarquee() {
         duration,
         ease: 'none',
         repeat: -1,
-        onReverseComplete: () => marqueeLoop.progress(1),
+        onReverseComplete: () => {
+          marqueeLoop.totalTime(marqueeLoop.rawTime() + marqueeLoop.duration() * 100);
+        },
         modifiers: {
           x: (x) => wrapX(parseFloat(x)) + 'px',
         },
@@ -85,6 +87,9 @@ export function initDraggableMarquee() {
       }
 
       applyTimeScale();
+
+      // verhindert natives Bild-/Link-Drag (Browser will z.B. Bild auf Desktop ziehen)
+      wrapper.addEventListener('dragstart', (e) => e.preventDefault());
 
       const marqueeObserver = Observer.create({
         target: wrapper,
