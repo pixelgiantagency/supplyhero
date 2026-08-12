@@ -23,6 +23,7 @@ import { initDraggableMarquee } from './components/draggable-marquee';
 import { initVideoBackground } from './components/video-background';
 import { initProductsHero } from './components/products-hero';
 import { initProductsGallery } from './components/products-gallery';
+import { initProjectsCursor } from './components/projects-cursor';
 
 function init() {
   initGsapCore();
@@ -34,6 +35,7 @@ function init() {
   initImageSequenceScroll();
   initContentRevealScroll();
   initHeroSequence();
+  initProjectsCursor();
   initProductsHero();
   initProductsGallery();
   initLineAnimations();
