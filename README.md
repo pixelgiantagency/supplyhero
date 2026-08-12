@@ -113,6 +113,17 @@ Ohne Schutz sind Hero-Elemente kurz normal sichtbar, bevor GSAP sie versteckt un
 ```
 `throttled: true` = Purge wurde ignoriert, `throttlingReset` = Sekunden bis zum nächsten möglichen Versuch. Falls throttled: einfach warten (Countdown) oder gar nichts tun – jsDelivrs eigener Cache läuft nach spätestens 12 Stunden (`s-maxage=43200`) ohnehin von selbst ab, auch ganz ohne Purge.
 
+**`@main`-Branch-Referenzen: Origin-Cache kann einen Purge überleben.** Anders als bei Tags (siehe Produktions-Workflow oben) hängt hinter `@main` bei jsDelivr intern noch eine zweite, vom Purge-Endpoint *nicht* erfasste Cache-Ebene – ein von jsDelivr selbst bestätigtes Verhalten bei Branch-Referenzen ([GitHub Issue #18376](https://github.com/jsdelivr/jsdelivr/issues/18376)). Ein erfolgreicher Purge (`throttled: false`) garantiert also **nicht**, dass `@main` sofort den neuesten Commit ausliefert – das kann noch einige Minuten dauern, ohne feste Obergrenze von jsDelivr.
+
+Schneller Diagnose-Check, **bevor** man nach einem Deploy im Code nach einem Fehler sucht: dieselbe Datei einmal über `@main`, einmal über die exakte Commit-SHA abrufen und vergleichen:
+
+```
+https://cdn.jsdelivr.net/gh/pixelgiantagency/supplyhero@main/dist/bundle.js
+https://cdn.jsdelivr.net/gh/pixelgiantagency/supplyhero@<commit-sha>/dist/bundle.js
+```
+
+Zeigt die SHA-Version den erwarteten Stand, `@main` aber nicht → reines jsDelivr-Cache-Thema, kein Code-Bug (Zeit sparen, nicht im Code suchen). Sofort-Workaround, falls es eilig ist: den Webflow-Script-Tag kurzzeitig auf die exakte SHA pinnen, bis `@main` nachgezogen hat – danach zurück auf `@main` stellen.
+
 ---
 
 ## Code-Qualität
