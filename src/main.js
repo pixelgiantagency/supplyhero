@@ -8,6 +8,7 @@ import {
   initImageReveals,
   initContentRevealScroll,
   initHeroSequence,
+  initSubpageHero,
   initLineAnimations,
   initTwostepScalingNavigation,
   initScrollRefreshFixes,
@@ -21,7 +22,6 @@ import { initAnspruch } from './components/anspruch';
 import { initProjectSlider } from './components/project-slider';
 import { initDraggableMarquee } from './components/draggable-marquee';
 import { initVideoBackground } from './components/video-background';
-import { initProductsHero } from './components/products-hero';
 import { initProductsGallery } from './components/products-gallery';
 import { initProjectsCursor } from './components/projects-cursor';
 
@@ -35,8 +35,8 @@ function init() {
   initImageSequenceScroll();
   initContentRevealScroll();
   initHeroSequence();
+  initSubpageHero();
   initProjectsCursor();
-  initProductsHero();
   initProductsGallery();
   initLineAnimations();
   initTwostepScalingNavigation();
