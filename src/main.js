@@ -22,8 +22,9 @@ import { initAnspruch } from './components/anspruch';
 import { initProjectSlider } from './components/project-slider';
 import { initDraggableMarquee } from './components/draggable-marquee';
 import { initVideoBackground } from './components/video-background';
-import { initProductsGallery } from './components/products-gallery';
 import { initProjectsCursor } from './components/projects-cursor';
+import { initProduktGrid } from './components/product-grid';
+import { initProductMarquee } from './components/product-marquee';
 
 function init() {
   initGsapCore();
@@ -37,7 +38,7 @@ function init() {
   initHeroSequence();
   initSubpageHero();
   initProjectsCursor();
-  initProductsGallery();
+  initProduktGrid();
   initLineAnimations();
   initTwostepScalingNavigation();
   initStepReveal();
@@ -45,6 +46,7 @@ function init() {
   initMarkenversprechen();
   initAnspruch();
   initProjectSlider();
+  initProductMarquee();
   initDraggableMarquee();
   initScrollRefreshFixes();
 
