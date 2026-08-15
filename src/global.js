@@ -7,7 +7,7 @@ export function initGsapCore() {
   smoother = ScrollSmoother.create({
     wrapper: '.page-wrapper',
     content: '.main-wrapper',
-    smooth: 0.8,
+    smooth: 1.2,
     effects: true,
     smoothTouch: false,
   });
@@ -235,7 +235,11 @@ export function initSubpageHero() {
   }
 
   if (heading) {
-    const splitHeading = new SplitText(heading, { type: 'lines', mask: 'lines', linesClass: 'line' });
+    const splitHeading = new SplitText(heading, {
+      type: 'lines',
+      mask: 'lines',
+      linesClass: 'line',
+    });
     gsap.set(splitHeading.lines, { yPercent: 110 });
     tl.to(splitHeading.lines, { yPercent: 0, duration: 1.1, stagger: 0.1, ease: 'expo.out' }, 0.4);
   }

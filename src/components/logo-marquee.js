@@ -21,37 +21,49 @@ export function initLogoMarquees() {
     // ("Cannot access '...' before initialization") and silently aborts init.
     let tween;
     const clones = [];
-    let beforeWidth = 0; // total width of the groups cloned BEFORE the original
-
-    function groupWidth() {
-      return group.getBoundingClientRect().width;
-    }
+    let beforeWidth = 0; // total width (incl. gaps) of the groups cloned BEFORE the original
+    let period = 0; // true repeat distance: group width + the gap between groups
 
     function clearClones() {
       clones.forEach((c) => c.remove());
       clones.length = 0;
       beforeWidth = 0;
+      period = 0;
     }
 
     // Clones are added on BOTH sides of the original group. That way the
     // marquee works correctly whichever direction it scrolls, without
     // needing separate logic per direction.
+    //
+    // The repeat distance ("period") is measured from actual clone
+    // positions rather than just the group's own width, because any gap
+    // the track applies between groups (so seams don't look glued
+    // together) is NOT part of the group's own box width.
     function buildClones() {
       clearClones();
-      const gw = groupWidth();
       const instanceWidth = instance.getBoundingClientRect().width;
-      if (!gw || !instanceWidth) return;
+      const initialWidth = group.getBoundingClientRect().width;
+      if (!initialWidth || !instanceWidth) return;
 
-      const needed = instanceWidth + gw;
+      const firstClone = group.cloneNode(true);
+      firstClone.setAttribute('data-marquee-clone', '');
+      firstClone.setAttribute('aria-hidden', 'true');
+      track.appendChild(firstClone);
+      clones.push(firstClone);
 
-      let widthAfter = 0;
+      period = firstClone.getBoundingClientRect().left - group.getBoundingClientRect().left;
+      if (!period) period = initialWidth;
+
+      const needed = instanceWidth + period;
+
+      let widthAfter = period; // firstClone already accounted for
       while (widthAfter < needed) {
         const clone = group.cloneNode(true);
         clone.setAttribute('data-marquee-clone', '');
         clone.setAttribute('aria-hidden', 'true');
         track.appendChild(clone);
         clones.push(clone);
-        widthAfter += gw;
+        widthAfter += period;
       }
 
       let widthBefore = 0;
@@ -61,14 +73,13 @@ export function initLogoMarquees() {
         clone.setAttribute('aria-hidden', 'true');
         track.insertBefore(clone, track.firstChild);
         clones.push(clone);
-        widthBefore += gw;
+        widthBefore += period;
       }
-      beforeWidth = widthBefore; // always an exact multiple of gw
+      beforeWidth = widthBefore; // always an exact multiple of period
     }
 
     function startTween() {
-      const gw = groupWidth();
-      if (!gw) return;
+      if (!period) return;
 
       if (tween) tween.kill();
 
@@ -78,7 +89,7 @@ export function initLogoMarquees() {
       // Without this, the track has nothing at negative local coordinates
       // and the content just runs out to the right with nothing following.
       const startX = direction === 'right' ? -beforeWidth : 0;
-      const endX = direction === 'right' ? startX + gw : -gw;
+      const endX = direction === 'right' ? startX + period : -period;
 
       gsap.set(track, { x: startX });
 
