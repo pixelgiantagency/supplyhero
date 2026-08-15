@@ -16,7 +16,6 @@ import {
 
 import { initImageSequenceScroll } from './components/image-sequence';
 import { initStepReveal } from './components/step-reveal';
-import { initCategoryHover } from './components/category-hover';
 import { initMarkenversprechen } from './components/markenversprechen';
 import { initAnspruch } from './components/anspruch';
 import { initProjectSlider } from './components/project-slider';
@@ -42,7 +41,6 @@ function init() {
   initLineAnimations();
   initTwostepScalingNavigation();
   initStepReveal();
-  initCategoryHover();
   initMarkenversprechen();
   initAnspruch();
   initProjectSlider();
