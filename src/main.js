@@ -23,6 +23,7 @@ import { initDraggableMarquee } from './components/draggable-marquee';
 import { initVideoBackground } from './components/video-background';
 import { initProjectsCursor } from './components/projects-cursor';
 import { initProduktGrid } from './components/product-grid';
+import { initLogoMarquees } from './components/logo-marquee';
 import { initProductMarquee } from './components/product-marquee';
 
 function init() {
@@ -36,6 +37,7 @@ function init() {
   initContentRevealScroll();
   initHeroSequence();
   initSubpageHero();
+  initLogoMarquees();
   initProjectsCursor();
   initProduktGrid();
   initLineAnimations();
