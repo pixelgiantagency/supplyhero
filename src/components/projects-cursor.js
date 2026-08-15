@@ -94,11 +94,11 @@ export function initProjectsCursor() {
         // Pop nötig.
         gsap.to(textTargets, {
           autoAlpha: 0,
-          duration: 0.12,
+          duration: 0,
           ease: 'power2.in',
           onComplete: () => {
             setCursorText(card);
-            gsap.to(textTargets, { autoAlpha: 1, duration: 0.18, ease: 'power2.out' });
+            gsap.to(textTargets, { autoAlpha: 1, duration: 0, ease: 'power2.out' });
           },
         });
       } else {
