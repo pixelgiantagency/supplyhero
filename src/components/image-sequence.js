@@ -18,12 +18,15 @@ export function initImageSequenceScroll() {
     const mobileSrc = canvas.dataset.mobileSrc || desktopSrc;
     const staticSrc = canvas.dataset.staticSrc;
     const filetype = canvas.dataset.filetype || 'webp';
+    const radiusDesktop = canvas.dataset.radius || '6rem';
+    const radiusMobile = canvas.dataset.radiusMobile || radiusDesktop;
     const startTrigger = wrap.dataset.scrollStart || 'top top';
     const endTrigger = wrap.dataset.scrollEnd || 'bottom bottom';
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     const baseUrl = isMobile ? mobileSrc : desktopSrc;
+    const startRadius = isMobile ? radiusMobile : radiusDesktop;
     const lastIndex = indexStart + frames - 1;
 
     let lastProgress = 0;
@@ -177,10 +180,10 @@ export function initImageSequenceScroll() {
     // 1. Wir verknüpfen den Clip-Path starr mit einer Variablen
     element.style.clipPath = 'inset(0% var(--clip) 0% var(--clip) round var(--radius))';
 
-    // 2. Wir setzen den Startwert der Variablen auf 5%
+    // 2. Wir setzen den Startwert der Variablen auf den (ggf. Mobile-)Radius
     gsap.set(element, {
       '--clip': '5%',
-      '--radius': '6rem', // Hier kannst du den Radius anpassen (z.B. "2rem" oder "40px")
+      '--radius': startRadius,
     });
 
     // 3. Beides synchron auf 0 animieren
