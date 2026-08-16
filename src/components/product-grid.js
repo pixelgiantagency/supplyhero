@@ -147,17 +147,25 @@ export function initProduktGrid() {
 
   // Gemeinsamen Ziel-Grid-Container einmalig anlegen, falls noch nicht vorhanden.
   function ensureTargetGrid() {
-    var existing = document.getElementById(TARGET_GRID_ID);
-    if (existing) return existing;
-    var el = document.createElement('div');
-    el.id = TARGET_GRID_ID;
+    var el = document.getElementById(TARGET_GRID_ID);
+    if (!el) {
+      // Kein Designer-Element mit dieser ID vorhanden -> selbst anlegen und
+      // direkt hinter die letzte Quell-Liste einsortieren.
+      el = document.createElement('div');
+      el.id = TARGET_GRID_ID;
+      var lastWrapper = sourceWrappers[sourceWrappers.length - 1];
+      lastWrapper.parentNode.insertBefore(el, lastWrapper.nextSibling);
+    }
+    // Grid-Eigenschaften IMMER setzen, unabhängig davon ob das Element neu
+    // erstellt oder wiederverwendet wurde (z.B. ein Designer-Block mit
+    // id="produkte-grid-target", auf dem gezielt Padding gesetzt werden
+    // kann, ohne die Grid-Mechanik dort manuell nachbauen zu müssen - die
+    // übernimmt weiterhin komplett das Script).
     el.style.display = 'grid';
     el.style.gridAutoColumns = '1fr';
     el.style.columnGap = '1rem';
     el.style.rowGap = '1rem';
     el.style.gridTemplateColumns = 'repeat(' + getColumnCount() + ', 1fr)';
-    var lastWrapper = sourceWrappers[sourceWrappers.length - 1];
-    lastWrapper.parentNode.insertBefore(el, lastWrapper.nextSibling);
     return el;
   }
   var targetGrid = ensureTargetGrid();
