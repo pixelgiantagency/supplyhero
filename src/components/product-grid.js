@@ -52,7 +52,7 @@ export function initProduktGrid() {
   // ---------------------------------------------------------------------
   function getColumnCount() {
     var w = window.innerWidth;
-    if (w <= 479) return 1;
+    if (w <= 479) return 2;
     if (w <= 767) return 2;
     if (w <= 991) return 3;
     return 4;
