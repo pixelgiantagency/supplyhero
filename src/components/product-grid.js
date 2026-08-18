@@ -6,24 +6,30 @@
 // Puffer bis 600) beim Seitenaufruf statisch ins DOM rendern - kein Finsweet,
 // keine AJAX-Nachladerei nötig.
 //
-// Pro Aufruf (Seitenladen, Filter-Wechsel) wird EIN einziger Batch von 48
-// zufälligen Produkten gezogen und in ein gemeinsames Grid verschoben - kein
-// Load More, keine "schon gezeigt"-Zustandsverwaltung.
+// Load-More-Modell: Pro aktivem Filter (inkl. "Alle") wird der komplette
+// gefilterte Pool EINMAL gemischt und diese Reihenfolge gemerkt. Der erste
+// Aufruf zeigt INITIAL_COUNT, jeder Load-More-Klick deckt die nächsten
+// LOAD_MORE_COUNT davon auf - garantiert keine Wiederholung innerhalb einer
+// Filter-Sitzung. Filter-Wechsel oder Seiten-Reload = komplett neue
+// Zufalls-Reihenfolge, wieder bei vorne beginnend.
 
 export function initProduktGrid() {
-  var BATCH_SIZE = 48;
+  // Getrennte Konstanten, damit sich "erster Batch" und "pro Load-More-Klick"
+  // unabhängig voneinander anpassen lassen, auch wenn beide aktuell gleich sind.
+  var INITIAL_COUNT = 24;
+  var LOAD_MORE_COUNT = 24;
+
   var HIGHLIGHT_CLASS = 'is-highlighted';
   var ACTIVE_CLASS = 'is-active';
   var REVEAL_CLASS = 'hg-positioned'; // wiederverwendet: gleiche Klasse/CSS wie im bestehenden Reveal-Muster
   var MIN_ITEMS_FOR_HIGHLIGHT = 8;
   var MAX_ATTEMPTS_PER_TRY = 25;
-  // Ziel-Anteil an 2x2-Kacheln pro Spaltenzahl/Breakpoint, bezogen auf einen
-  // vollen 48er-Batch (4/48 auf Desktop, 2/48 im 3-Spalten-Tablet-Layout).
-  // Wird pro Render mit der tatsächlichen Batch-Größe multipliziert, damit
-  // ein gefilterter Batch mit z.B. nur 28 Produkten nicht überproportional
-  // viele große Kacheln bekommt. 1 und 2 Spalten bleiben komplett ohne
-  // Highlights - bei 2 Spalten würde eine 2x2-Kachel schon die volle Breite
-  // einnehmen und das schmale Layout dominieren.
+  // Ziel-Anteil an 2x2-Kacheln, bezogen auf einen vollen 48er-Batch (4/48 auf
+  // Desktop, 2/48 im 3-Spalten-Tablet-Layout). Wird pro Chunk mit dessen
+  // tatsächlicher Größe multipliziert - bei 24er-Chunks landet man z.B. auf
+  // Desktop automatisch bei ~2 Highlights pro Nachladen statt 4, exakt
+  // proportional. 1 und 2 Spalten bleiben komplett ohne Highlights - bei
+  // 2 Spalten würde eine 2x2-Kachel schon die volle Breite einnehmen.
   var HIGHLIGHT_RATIO_BY_COLUMNS = { 1: 0, 2: 0, 3: 2 / 48, 4: 4 / 48 };
   var TARGET_GRID_ID = 'produkte-grid-target';
   var SOURCE_WRAPPER_SELECTOR = '.produkte_collection';
@@ -32,14 +38,17 @@ export function initProduktGrid() {
   var IMG_SELECTOR = '.produkte_img';
   var FILTER_INPUT_SELECTOR = 'input[name="projekte-filter"]';
   var FILTER_LABEL_SELECTOR = '.projekte_filter-label';
+  var LOAD_MORE_SELECTOR = '[data-produkte-load-more]';
   var ALL_LABEL = 'alle';
 
   var grid = document.querySelector(SOURCE_WRAPPER_SELECTOR);
   if (!grid) return; // keine Produkte-Sektion auf dieser Seite -> nichts zu tun
 
   // ---------------------------------------------------------------------
-  // 1:1 AUS products-gallery.js ÜBERNOMMEN - unverändert in der Kernlogik,
-  // bis auf computeBestAppend (siehe Kommentar dort).
+  // Bin-Packing/Highlight-Logik - im Kern aus products-gallery.js, jetzt
+  // wieder mit existingGrid-Parameter genutzt (fürs inkrementelle Anhängen
+  // neuer Chunks auf ein bereits bestehendes Layout), genau wie im Original
+  // gedacht.
   // ---------------------------------------------------------------------
   function getColumnCount() {
     var w = window.innerWidth;
@@ -104,63 +113,44 @@ export function initProduktGrid() {
     }
     return indices;
   }
-  // Änderung ggü. dem Original: die Obergrenze fuer numHighlights ist nicht
-  // mehr fest, sondern wird aus dem Verhältnis (HIGHLIGHT_RATIO_BY_COLUMNS)
-  // und der tatsächlichen Batch-Größe (newCount) berechnet - degradiert von
-  // dort aus weiterhin schrittweise runter, falls die Geometrie's nicht hergibt.
-  function computeBestAppend(newCount, columns) {
+  function computeBestAppend(existingGrid, newCount, columns) {
     var ratio = HIGHLIGHT_RATIO_BY_COLUMNS[columns] || 0;
     var maxHighlights = Math.round(ratio * newCount);
     if (columns < 2 || maxHighlights === 0 || newCount < MIN_ITEMS_FOR_HIGHLIGHT) {
-      return simulateAppend([], newCount, columns, new Set());
+      return simulateAppend(existingGrid, newCount, columns, new Set());
     }
     for (var numHighlights = maxHighlights; numHighlights >= 0; numHighlights--) {
-      if (numHighlights === 0) return simulateAppend([], newCount, columns, new Set());
+      if (numHighlights === 0) return simulateAppend(existingGrid, newCount, columns, new Set());
       for (var attempt = 0; attempt < MAX_ATTEMPTS_PER_TRY; attempt++) {
         var candidates = pickRandomIndices(newCount, numHighlights);
-        var sim = simulateAppend([], newCount, columns, candidates);
+        var sim = simulateAppend(existingGrid, newCount, columns, candidates);
         if (isValid(sim)) return sim;
       }
     }
   }
 
   // ---------------------------------------------------------------------
-  // NEU - ersetzt die Finsweet-Hülle (window.FinsweetAttributes.push,
-  // afterRender-Hook, fs-list-Attribute).
+  // Datenquelle, Ziel-Grid, Filter - unverändert ggü. der No-Load-More-
+  // Version.
   // ---------------------------------------------------------------------
 
-  // Vereinheitlicht Whitespace (inkl. geschützter Leerzeichen \u00A0) und
-  // Groß-/Kleinschreibung vor jedem Text-Vergleich. Grund: ein per Hand
-  // umbenanntes Filter-Label enthielt ein unsichtbares \u00A0 statt eines
-  // normalen Leerzeichens, was reine .toLowerCase()-Vergleiche stumm hat
-  // scheitern lassen (Kategorie "Lifestyle & Sport" zeigte 0 Treffer).
   function normalize(str) {
     return (str || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
 
-  // Alle 6 Quell-Listen sofort verstecken. Verhindert, dass beim Laden kurz
-  // alle ~234+ Karten aufblitzen, bevor der erste Batch berechnet ist.
   var sourceWrappers = document.querySelectorAll(SOURCE_WRAPPER_SELECTOR);
   sourceWrappers.forEach(function (el) {
     el.style.display = 'none';
   });
 
-  // Gemeinsamen Ziel-Grid-Container einmalig anlegen, falls noch nicht vorhanden.
   function ensureTargetGrid() {
     var el = document.getElementById(TARGET_GRID_ID);
     if (!el) {
-      // Kein Designer-Element mit dieser ID vorhanden -> selbst anlegen und
-      // direkt hinter die letzte Quell-Liste einsortieren.
       el = document.createElement('div');
       el.id = TARGET_GRID_ID;
       var lastWrapper = sourceWrappers[sourceWrappers.length - 1];
       lastWrapper.parentNode.insertBefore(el, lastWrapper.nextSibling);
     }
-    // Grid-Eigenschaften IMMER setzen, unabhängig davon ob das Element neu
-    // erstellt oder wiederverwendet wurde (z.B. ein Designer-Block mit
-    // id="produkte-grid-target", auf dem gezielt Padding gesetzt werden
-    // kann, ohne die Grid-Mechanik dort manuell nachbauen zu müssen - die
-    // übernimmt weiterhin komplett das Script).
     el.style.display = 'grid';
     el.style.gridAutoColumns = '1fr';
     el.style.columnGap = '1rem';
@@ -169,11 +159,8 @@ export function initProduktGrid() {
     return el;
   }
   var targetGrid = ensureTargetGrid();
+  var loadMoreBtn = document.querySelector(LOAD_MORE_SELECTOR);
 
-  // Master-Pool EINMALIG aus allen 6 Listen einsammeln. Bleibt die stabile
-  // Referenz fuer die gesamte Sitzung - wir fragen den DOM nie wieder per
-  // querySelectorAll neu ab, weil appendChild die Karten ja aus ihrer
-  // urspruenglichen Liste heraus verschiebt.
   var pool = Array.prototype.map.call(document.querySelectorAll(ITEM_SELECTOR), function (el) {
     var dataSrcEl = el.querySelector(DATASRC_SELECTOR);
     return {
@@ -185,11 +172,6 @@ export function initProduktGrid() {
     };
   });
 
-  // Filter-Radios einlesen: Label-Text statt id verwenden, weil die id-
-  // Attribute der Radios noch die alten Kategorienamen tragen (Food-
-  // Beverages, Clothing, Headwear, Accessories), die Labels aber schon
-  // die neuen (Food & Beverage, Artists & Events, ...). Label ist die
-  // verlaessliche Quelle, id wird bewusst ignoriert.
   var filterInputs = Array.prototype.map.call(
     document.querySelectorAll(FILTER_INPUT_SELECTOR),
     function (input) {
@@ -209,10 +191,6 @@ export function initProduktGrid() {
     return match ? match.label : null;
   }
 
-  // Falls beim Laden keiner der Radios "checked" ist (z.B. weil "Alle" in
-  // Webflow nicht explizit als Standardauswahl gesetzt wurde), "Alle" hier
-  // selbst als Startzustand markieren. Sonst bekommt beim ersten Render kein
-  // Button die is-active-Klasse, obwohl inhaltlich ohnehin "Alle" gezeigt wird.
   (function ensureDefaultFilterChecked() {
     var anyChecked = filterInputs.some(function (f) {
       return f.input.checked;
@@ -225,10 +203,6 @@ export function initProduktGrid() {
     allEntry.input.checked = true;
   })();
 
-  // Setzt/entfernt die in Webflow bereits vorhandene "is-active"-Klasse auf
-  // dem Button-Wrapper, je nachdem welches Radio gerade ausgewählt ist.
-  // Die native :checked-Auswahl des Radios selbst toggelt ja keine Klasse,
-  // deshalb übernimmt das JS das hier explizit bei jedem Render.
   function updateActiveFilterButton() {
     filterInputs.forEach(function (f) {
       if (f.wrapper) f.wrapper.classList.toggle(ACTIVE_CLASS, f.input.checked);
@@ -246,7 +220,38 @@ export function initProduktGrid() {
     return a;
   }
 
-  function returnCurrentBatchHome() {
+  function revealImage(item) {
+    if (item.imageLoaded || !item.imageUrl) return;
+    var img = item.el.querySelector(IMG_SELECTOR);
+    if (img) img.src = item.imageUrl; // genau hier passiert der Netzwerk-Request - nie vorher
+    item.imageLoaded = true;
+  }
+
+  function scheduleScrollTriggerRefresh() {
+    // Grid-Höhe ändert sich mit jedem Chunk - ScrollTrigger/ScrollSmoother
+    // müssen das neu vermessen, sonst laufen Reveal-Sections weiter unten
+    // und der Footer-Parallax gegen veraltete Positionen (früher übernahm
+    // Finsweets eigener 'list'-Hook das automatisch, siehe global.js).
+    if (typeof ScrollTrigger === 'undefined') return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        ScrollTrigger.refresh();
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Load-More-Zustand pro Filter-Sitzung.
+  // ---------------------------------------------------------------------
+  var session = {
+    orderedPool: [],
+    revealedCount: 0,
+    gridState: [],
+    isAll: true,
+    activeLabel: null,
+  };
+
+  function returnAllVisibleItemsHome() {
     Array.prototype.slice.call(targetGrid.children).forEach(function (card) {
       var item = pool.filter(function (p) {
         return p.el === card;
@@ -255,45 +260,66 @@ export function initProduktGrid() {
     });
   }
 
-  function revealImage(item) {
-    if (item.imageLoaded || !item.imageUrl) return;
-    var img = item.el.querySelector(IMG_SELECTOR);
-    if (img) img.src = item.imageUrl; // genau hier passiert der Netzwerk-Request - nie vorher
-    item.imageLoaded = true;
+  function updateLoadMoreVisibility() {
+    if (!loadMoreBtn) return;
+    var hasMore = session.revealedCount < session.orderedPool.length;
+    loadMoreBtn.style.display = hasMore ? '' : 'none';
   }
 
-  function applyLayout(batchItems) {
+  function revealNextChunk(count) {
+    var remaining = session.orderedPool.length - session.revealedCount;
+    var n = Math.min(count, remaining);
+    if (n <= 0) {
+      updateLoadMoreVisibility();
+      return;
+    }
+
+    var chunk = session.orderedPool.slice(session.revealedCount, session.revealedCount + n);
+    session.revealedCount += n;
+
+    // Echtes appendChild: Karten wandern aus bis zu 6 verschiedenen
+    // Quell-Listen physisch in EIN Ziel-Grid, keine Lücken.
+    chunk.forEach(function (item) {
+      targetGrid.appendChild(item.el);
+    });
+
     var columns = getColumnCount();
     targetGrid.style.gridTemplateColumns = 'repeat(' + columns + ', 1fr)';
-    var sim = computeBestAppend(batchItems.length, columns);
+    var sim = computeBestAppend(session.gridState, chunk.length, columns);
     sim.positions.forEach(function (pos) {
-      var el = batchItems[pos.index].el;
+      var el = chunk[pos.index].el;
       el.classList.toggle(HIGHLIGHT_CLASS, pos.isBig);
       el.style.gridColumn = pos.col + 1 + ' / span ' + pos.w;
       el.style.gridRow = pos.row + 1 + ' / span ' + pos.h;
     });
+    session.gridState = sim.grid; // Belegung merken, damit der nächste Chunk nahtlos weitermacht
 
-    // Grid-Höhe ändert sich je nach Filter/Spaltenzahl - ScrollTrigger und
-    // ScrollSmoother müssen das neu vermessen, sonst laufen Reveal-Sections
-    // weiter unten und der Footer-Parallax gegen veraltete Positionen.
-    // Früher hat Finsweets eigener 'list'-Hook (siehe global.js) das bei
-    // jeder Filter-Änderung automatisch ausgelöst - übernehmen wir jetzt hier.
-    // Doppeltes rAF, damit der Browser das neue Grid sicher fertig
-    // layoutet hat, bevor gemessen wird.
-    if (typeof ScrollTrigger !== 'undefined') {
+    chunk.forEach(function (item, i) {
+      revealImage(item);
+      item.el.classList.remove(REVEAL_CLASS);
+      item.el.style.transitionDelay = Math.min(i * 0.03, 0.3).toFixed(2) + 's';
       requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          ScrollTrigger.refresh();
-        });
+        item.el.classList.add(REVEAL_CLASS);
       });
-    }
+    });
+
+    scheduleScrollTriggerRefresh();
+    updateLoadMoreVisibility();
+
+    console.log(
+      '[Produkte-Grid] Filter:',
+      session.isAll ? 'Alle' : session.activeLabel,
+      '| Gezeigt:',
+      session.revealedCount,
+      '/',
+      session.orderedPool.length
+    );
   }
 
-  function render() {
+  function startSession(activeLabel) {
     updateActiveFilterButton();
-    returnCurrentBatchHome();
+    returnAllVisibleItemsHome();
 
-    var activeLabel = getActiveFilterLabel();
     var isAll = !activeLabel || normalize(activeLabel) === ALL_LABEL;
     var filtered = isAll
       ? pool
@@ -301,61 +327,66 @@ export function initProduktGrid() {
           return normalize(p.category) === normalize(activeLabel);
         });
 
-    var batch = shuffle(filtered).slice(0, Math.min(BATCH_SIZE, filtered.length));
+    session.orderedPool = shuffle(filtered);
+    session.revealedCount = 0;
+    session.gridState = [];
+    session.isAll = isAll;
+    session.activeLabel = activeLabel;
 
-    // Echtes appendChild: Karten wandern aus bis zu 6 verschiedenen
-    // Quell-Listen physisch in EIN Ziel-Grid, keine Lücken.
-    batch.forEach(function (item) {
-      targetGrid.appendChild(item.el);
-    });
-
-    applyLayout(batch);
-
-    batch.forEach(function (item, i) {
-      revealImage(item);
-      item.el.classList.remove(REVEAL_CLASS);
-      // gleiches Stagger-Muster wie im bestehenden Reveal (max 0.3s)
-      item.el.style.transitionDelay = Math.min(i * 0.03, 0.3).toFixed(2) + 's';
-      requestAnimationFrame(function () {
-        item.el.classList.add(REVEAL_CLASS);
-      });
-    });
-
-    console.log(
-      '[Produkte-Grid] Filter:',
-      isAll ? 'Alle' : activeLabel,
-      '| Batch:',
-      batch.length,
-      '| Pool gesamt:',
-      pool.length
-    );
+    revealNextChunk(INITIAL_COUNT);
   }
 
-  // Nur Neuanordnen bei Resize, NICHT neu mischen - Verhalten bewusst
-  // identisch zum bestehenden Masonry-Script.
+  // Bei Resize wird der GESAMTE bisher sichtbare Bestand (nicht nur der
+  // letzte Chunk) mit frischer Belegung neu angeordnet, weil sich bei
+  // Spaltenzahl-Wechsel die komplette Geometrie ändert - Highlights werden
+  // dabei bewusst neu gewürfelt statt beibehalten (identisches Verhalten
+  // zum ursprünglichen products-gallery.js bei Breakpoint-Wechsel).
   var resizeTimer = null;
   function onResize() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
-          var current = Array.prototype.map
+          var visibleItems = Array.prototype.map
             .call(targetGrid.children, function (card) {
               return pool.filter(function (p) {
                 return p.el === card;
               })[0];
             })
             .filter(Boolean);
-          if (current.length) applyLayout(current);
+          if (!visibleItems.length) return;
+
+          var columns = getColumnCount();
+          targetGrid.style.gridTemplateColumns = 'repeat(' + columns + ', 1fr)';
+          var sim = computeBestAppend([], visibleItems.length, columns);
+          sim.positions.forEach(function (pos) {
+            var el = visibleItems[pos.index].el;
+            el.classList.toggle(HIGHLIGHT_CLASS, pos.isBig);
+            el.style.gridColumn = pos.col + 1 + ' / span ' + pos.w;
+            el.style.gridRow = pos.row + 1 + ' / span ' + pos.h;
+          });
+          session.gridState = sim.grid; // synchron halten, damit der nächste Load-More-Klick sauber anschließt
+
+          scheduleScrollTriggerRefresh();
         });
       });
     }, 400);
   }
 
   filterInputs.forEach(function (f) {
-    f.input.addEventListener('change', render);
+    f.input.addEventListener('change', function () {
+      startSession(getActiveFilterLabel());
+    });
   });
+
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', function (e) {
+      e.preventDefault(); // Link-Element, kein echtes Navigationsziel
+      revealNextChunk(LOAD_MORE_COUNT);
+    });
+  }
+
   window.addEventListener('resize', onResize);
 
-  render();
+  startSession(getActiveFilterLabel());
 }
