@@ -25,6 +25,7 @@ import { initProjectsCursor } from './components/projects-cursor';
 import { initProduktGrid } from './components/product-grid';
 import { initLogoMarquees } from './components/logo-marquee';
 import { initProductMarquee } from './components/product-marquee';
+import { initProjectNav } from './components/project-nav';
 
 function init() {
   initGsapCore();
@@ -46,6 +47,7 @@ function init() {
   initMarkenversprechen();
   initAnspruch();
   initProjectSlider();
+  initProjectNav();
   initProductMarquee();
   initDraggableMarquee();
   initScrollRefreshFixes();
