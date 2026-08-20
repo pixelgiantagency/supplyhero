@@ -1,3 +1,5 @@
+import { splitHeadingWithHighlights } from './utils/split-text-highlights.js';
+
 let smoother;
 
 export function initGsapCore() {
@@ -60,7 +62,7 @@ export function initMaskTextScrollReveal() {
             ? ['lines', 'words']
             : ['lines', 'words', 'chars'];
 
-      SplitText.create(heading, {
+      splitHeadingWithHighlights(heading, {
         type: typesToSplit.join(', '),
         mask: 'lines',
         autoSplit: true,

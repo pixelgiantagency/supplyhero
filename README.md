@@ -29,6 +29,8 @@ Ein Snippet im Webflow **Head-Code** (Project Settings → Custom Code) entschei
 src/
   main.js                  → Einstiegspunkt, importiert & ruft alle init-Funktionen auf
   global.js                → Site-weite Funktionen (Nav, Reveal-Groups, Hero-Sequenz, GSAP-Setup, FOUC-Reveal, Refresh-Fixes...)
+  utils/
+    split-text-highlights.js → SplitText-Wrapper für Headings mit .text-style-highlight-Spans (siehe eigener Abschnitt unten)
   components/               → Seitenspezifische Funktionen (nur dort geladen, wo die Elemente existieren)
     image-sequence.js
     category-hover.js
@@ -106,6 +108,45 @@ Ohne Schutz sind Hero-Elemente kurz normal sichtbar, bevor GSAP sie versteckt un
 **2. `global.js`:** `revealAfterSetup()` setzt `js-ready` auf `<body>`, wird in `main.js` als **letzter** Aufruf in `init()` ausgeführt (nachdem alle anderen init-Funktionen inkl. `initHeroSequence()` ihre GSAP-Startzustände gesetzt haben).
 
 **⚠️ Kritisch: Niemals `!important` in der CSS-Regel oben verwenden.** GSAP setzt seine Animationswerte als Inline-Styles ohne `!important` – ein `!important` in der externen Regel würde dann _immer_ gewinnen und die eigentliche Animation unsichtbar "einfrieren", selbst nachdem `js-ready` gesetzt wurde. Ohne `!important` gilt normale CSS-Priorität: Inline-Styles (von GSAP gesetzt) schlagen automatisch die externe Klassen-Regel, sobald GSAP anfängt zu animieren – kein Konflikt.
+
+---
+
+## SplitText mit Highlight-Spans (Zeilenumbrüche)
+
+`type: 'lines'`-Splits von SplitText auf Headings mit verschachtelten
+`<span class="text-style-highlight">` (die farbig hervorgehobenen Wörter)
+sind unzuverlässig – SplitText muss verschachtelte Elemente über "deepSlice"
+auflösen, und das bricht in der Praxis nicht deterministisch (mal korrekte,
+mal falsche Zeilenumbrüche, auch ohne dass sich die Fensterbreite ändert).
+Betroffen: jede Heading, die `.text-style-highlight`-Spans enthält UND per
+SplitText in Zeilen gesplittet wird.
+
+**Lösung:** `utils/split-text-highlights.js` → `splitHeadingWithHighlights(element, vars)`.
+Nimmt Highlight-Spans vor dem Split raus (reiner Text bleibt übrig, SplitText
+läuft dadurch über den zuverlässigen Pfad ohne verschachtelte Elemente) und
+setzt sie danach automatisch wieder auf die passenden `.word`-Elemente.
+Drop-in-Ersatz für `SplitText.create()` / `new SplitText()`, gleiche
+Rückgabe (SplitText-Instanz), gleiche Optionen.
+
+**Regel: Für jede neue Heading mit `type: 'lines'` `splitHeadingWithHighlights()`
+statt eines rohen `SplitText.create()`-Aufrufs benutzen** – auch wenn sie
+aktuell keinen Highlight-Span enthält. Kommt später einer dazu, bricht es
+sonst auf genau dieselbe, schwer reproduzierbare Art wieder.
+
+Aktuell genutzt in: `global.js` (`initMaskTextScrollReveal`) und
+`components/image-sequence.js` (Sequence-Heading auf der Home-Seite).
+
+**Stolperstein bei `autoSplit: true` + eigener Animation:** Wird die
+Reveal-Animation für die `.line`-Elemente außerhalb von `onSplit` gebaut
+(z. B. ein Snapshot wie `const targets = [...split.lines]` vor dem
+eigentlichen Tween), zeigt sie nach einem durch `autoSplit` ausgelösten
+Re-Split (Resize oder Font-Load) ins Leere – die alten Elemente sind weg,
+die neuen wurden nie versteckt, der Text bleibt dann unabhängig von
+Scroll/Trigger dauerhaft sichtbar. Die Animation muss **innerhalb** von
+`onSplit` gebaut und von dort **zurückgegeben** werden – SplitText
+übernimmt dann selbst den nahtlosen Fortschritts-Übergang zwischen altem
+und neuem Split. Siehe `image-sequence.js` als Beispiel für eine so in eine
+gescrubbte, gepinnte Timeline eingebettete Reveal-Animation.
 
 ---
 

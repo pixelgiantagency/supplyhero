@@ -1,3 +1,5 @@
+import { splitHeadingWithHighlights } from '../utils/split-text-highlights.js';
+
 export function initImageSequenceScroll() {
   const wraps = document.querySelectorAll('[data-sequence-wrap]');
 
@@ -207,30 +209,68 @@ export function initImageSequenceScroll() {
     const seqButton = wrap.querySelector('[data-sequence-button]');
 
     if (seqText) {
-      const splitSeqText = new SplitText(seqText, {
+      // Vorher: `new SplitText(seqText, { type: 'lines', mask: 'lines', linesClass: 'line' })`
+      // + Animation einmalig außerhalb aus splitSeqText.lines gebaut.
+      //
+      // Zwei Probleme, beide jetzt gelöst:
+      //
+      // 1) seqText enthält einen verschachtelten <span class="text-style-
+      //    highlight"> ("Teil des Teams.") -> SplitText musste den beim
+      //    Zeilen-Split zerlegen, was unzuverlässig war (falsche
+      //    Zeilenumbrüche). Fix: splitHeadingWithHighlights() nimmt den Span
+      //    vorher raus und setzt ihn nach dem Split wieder korrekt auf die
+      //    passenden Wörter.
+      //
+      // 2) Ohne autoSplit bleiben die .line-Elemente (Block-Elemente) für
+      //    immer bei der Zeilenaufteilung, mit der beim Laden gesplittet
+      //    wurde - vergrößert man das Fenster danach, bleiben zu kurze
+      //    Zeilen bestehen, statt sich neu zu verteilen. autoSplit behebt
+      //    das, splittet dafür bei Resize/Font-Load neu - dabei werden die
+      //    alten .line-Elemente durch neue ersetzt.
+      //
+      //    Deshalb darf die Reveal-Animation NICHT (wie vorher) einmalig
+      //    außerhalb aus einem Snapshot von splitSeqText.lines gebaut werden
+      //    - sie würde nach einem Re-Split ins Leere zeigen (alte Elemente
+      //    entfernt, neue nie versteckt -> Text bliebe unabhängig vom Scroll
+      //    dauerhaft sichtbar). Stattdessen wird sie in onSplit gebaut/neu
+      //    gebaut und dort in die gescrubbte masterTimeline gehängt - läuft
+      //    also bei jedem (Re-)Split automatisch mit den aktuellen
+      //    .line-Elementen. SplitText übernimmt dabei selbst den nahtlosen
+      //    Übergang (gleicher Fortschritt vor/nach dem Re-Split), und der
+      //    nächste Scroll-Tick bzw. das ohnehin schon vorhandene
+      //    ScrollTrigger.refresh() unten synchronisiert den Rest.
+      const buildTextReveal = (instance) => {
+        const animTargets = [...instance.lines];
+        if (seqButton) {
+          animTargets.push(seqButton);
+        }
+
+        gsap.set(animTargets, { yPercent: 110, opacity: 0 });
+
+        return gsap.timeline().fromTo(
+          animTargets,
+          { yPercent: 110, opacity: 0 },
+          {
+            yPercent: 0,
+            opacity: 1,
+            stagger: 0.08,
+            ease: 'power2.out',
+            duration: 0.2,
+          }
+        );
+      };
+
+      splitHeadingWithHighlights(seqText, {
         type: 'lines',
         mask: 'lines',
+        autoSplit: true,
         linesClass: 'line',
-      });
-      const animTargets = [...splitSeqText.lines];
-      if (seqButton) {
-        animTargets.push(seqButton);
-      }
-
-      gsap.set(animTargets, { yPercent: 110, opacity: 0 });
-
-      masterTimeline.fromTo(
-        animTargets,
-        { yPercent: 110, opacity: 0 },
-        {
-          yPercent: 0,
-          opacity: 1,
-          stagger: 0.08,
-          ease: 'power2.out',
-          duration: 0.2,
+        onSplit(instance) {
+          const tween = buildTextReveal(instance);
+          masterTimeline.add(tween, 0.3);
+          return tween; // ermöglicht SplitText den nahtlosen Fortschritts-Übergang bei Re-Split
         },
-        0.3
-      );
+      });
     }
 
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
