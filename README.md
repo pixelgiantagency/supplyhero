@@ -2,7 +2,7 @@
 
 Custom GSAP-Animationen und Interaktionen für die Supplyhero-Webflow-Seite. Der Code wird lokal in VSCode entwickelt, über GitHub versioniert und per [jsDelivr](https://www.jsdelivr.com/) direkt aus dem Repository in Webflow eingebunden.
 
-- **Repo:** https://github.com/pixelgiantagency/supplyhero
+- **Repo:** https://github.com/SupplyHero/supplyhero
 - **Staging:** https://supplyherostaging.webflow.io
 
 ---
@@ -11,11 +11,11 @@ Custom GSAP-Animationen und Interaktionen für die Supplyhero-Webflow-Seite. Der
 
 Ein Snippet im Webflow **Head-Code** (Project Settings → Custom Code) entscheidet automatisch, welche Version von `bundle.js` geladen wird:
 
-| Modus       | Bedingung                                                               | Quelle                                                                                              |
-| ----------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Lokal**   | `?dev=true` in der URL (bzw. gesetzte `devMode`-Flag in `localStorage`) | `http://localhost:3000/bundle.js` (lokaler esbuild-Server)                                          |
-| **Staging** | `hostname` enthält `webflow.io`, kein Dev-Modus aktiv                   | `https://cdn.jsdelivr.net/gh/pixelgiantagency/supplyhero@main/dist/bundle.js`                       |
-| **Prod**    | alles andere (echte Live-Domain)                                        | `https://cdn.jsdelivr.net/gh/pixelgiantagency/supplyhero@<VERSION>/dist/bundle.js` (fester Git-Tag) |
+| Modus       | Bedingung                                                               | Quelle                                                                                        |
+| ----------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Lokal**   | `?dev=true` in der URL (bzw. gesetzte `devMode`-Flag in `localStorage`) | `http://localhost:3000/bundle.js` (lokaler esbuild-Server)                                    |
+| **Staging** | `hostname` enthält `webflow.io`, kein Dev-Modus aktiv                   | `https://cdn.jsdelivr.net/gh/SupplyHero/supplyhero@main/dist/bundle.js`                       |
+| **Prod**    | alles andere (echte Live-Domain)                                        | `https://cdn.jsdelivr.net/gh/SupplyHero/supplyhero@<VERSION>/dist/bundle.js` (fester Git-Tag) |
 
 **Wichtig:** `devMode` wird in `localStorage` gespeichert – **pro Browser getrennt**. Testest du in mehreren Browsern, musst du in jedem einzeln `?dev=true` bzw. `?dev=false` setzen. Vergisst du das, versucht der Browser weiterhin `localhost:3000` zu laden, obwohl der lokale Server längst aus ist → `ERR_CONNECTION_REFUSED`. Einfach `?dev=false` einmal aufrufen, um zurückzusetzen.
 
@@ -207,8 +207,8 @@ Will der Kunde die Produkte-Kategorien später ändern, ist am **Script selbst n
 Schneller Diagnose-Check, **bevor** man nach einem Deploy im Code nach einem Fehler sucht: dieselbe Datei einmal über `@main`, einmal über die exakte Commit-SHA abrufen und vergleichen:
 
 ```
-https://cdn.jsdelivr.net/gh/pixelgiantagency/supplyhero@main/dist/bundle.js
-https://cdn.jsdelivr.net/gh/pixelgiantagency/supplyhero@<commit-sha>/dist/bundle.js
+https://cdn.jsdelivr.net/gh/SupplyHero/supplyhero@main/dist/bundle.js
+https://cdn.jsdelivr.net/gh/SupplyHero/supplyhero@<commit-sha>/dist/bundle.js
 ```
 
 Zeigt die SHA-Version den erwarteten Stand, `@main` aber nicht → reines jsDelivr-Cache-Thema, kein Code-Bug (Zeit sparen, nicht im Code suchen). Sofort-Workaround, falls es eilig ist: den Webflow-Script-Tag kurzzeitig auf die exakte SHA pinnen, bis `@main` nachgezogen hat – danach zurück auf `@main` stellen.
@@ -239,7 +239,7 @@ VSCode ist auf "Format on Save" (Prettier) eingestellt.
 Falls trotzdem noch alter Stand angezeigt wird, manuell purgen (Response-JSON auf `throttled` prüfen, siehe oben):
 
 ```
-https://purge.jsdelivr.net/gh/pixelgiantagency/supplyhero@main/dist/bundle.js
+https://purge.jsdelivr.net/gh/SupplyHero/supplyhero@main/dist/bundle.js
 ```
 
 ### Produktion (manuell, bewusster Schritt)
