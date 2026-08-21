@@ -34,4 +34,4 @@ jobs:
           git push
 
       - name: Purge jsDelivr cache
-        run: curl -s "https://purge.jsdelivr.net/gh/pixelgiantagency/supplyhero@main/dist/bundle.js"
+        run: curl -s "https://purge.jsdelivr.net/gh/SupplyHero/supplyhero@main/dist/bundle.js"
